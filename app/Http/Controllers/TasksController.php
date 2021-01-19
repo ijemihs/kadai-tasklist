@@ -17,11 +17,18 @@ class TasksController extends Controller
      */
     public function index()
     {
-        // タスク一覧を取得
-        $tasks = Task::all();
+        // 認証済みユーザを取得
+        $user = \Auth::user();
+        
+        // 関係するモデルの件数をロード
+        $user->loadRelationshipCounts();
+        
+        // ユーザのタスクの一覧をidの昇順で取得
+        $tasks = $user->tasks()->orderBy('id', 'asc')->get();
         
         // タスク一覧ビューでそれを表示
         return view('tasks.index', [
+            'user' => $user,
             'tasks' => $tasks,
         ]);
     }
@@ -63,7 +70,10 @@ class TasksController extends Controller
         $task = new Task;
         $task->status = $request->status;
         $task->content = $request->content;
-        $task->save();
+        
+        // ログインユーザのタスクとして保存
+        $user = \Auth::user();
+        $user->tasks()->save($task);
         
         // トップページへリダイレクトさせる
         return redirect('/');
@@ -81,6 +91,11 @@ class TasksController extends Controller
     {
         // idの値でタスクを検索して取得
         $task = Task::findOrFail($id);
+        
+        // ログインユーザのタスクでなければ、トップページへリダイレクト
+        if ($task->user_id !== \Auth::id()) {
+            return redirect('/');
+        }
         
         // タスク詳細ビューでそれを表示
         return view('tasks.show', [
@@ -100,6 +115,11 @@ class TasksController extends Controller
     {
         // idの値でタスクを検索して取得
         $task = Task::findOrFail($id);
+        
+        // ログインユーザのタスクでなければ、トップページへリダイレクト
+        if ($task->user_id !== \Auth::id()) {
+            return redirect('/');
+        }
         
         // タスク編集ビューでそれを表示
         return view('tasks.edit', [
@@ -126,6 +146,12 @@ class TasksController extends Controller
         
         // idの値でタスクを検索して取得
         $task = Task::findOrFail($id);
+        
+        // ログインユーザのタスクでなければ、トップページへリダイレクト
+        if ($task->user_id !== \Auth::id()) {
+            return redirect('/');
+        }
+        
         // タスクを更新
         $task->status = $request->status;
         $task->content = $request->content;
@@ -147,6 +173,12 @@ class TasksController extends Controller
     {
         // idの値でタスクを検索して取得
         $task = Task::findOrFail($id);
+        
+        // ログインユーザのタスクでなければ、トップページへリダイレクト
+        if ($task->user_id !== \Auth::id()) {
+            return redirect('/');
+        }
+        
         // タスクを削除
         $task->delete();
         
